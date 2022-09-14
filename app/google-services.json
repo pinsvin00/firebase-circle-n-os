@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "897926776524",
+    "firebase_url": "https://ogniowa-baza-default-rtdb.europe-west1.firebasedatabase.app",
+    "project_id": "ogniowa-baza",
+    "storage_bucket": "ogniowa-baza.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:897926776524:android:fb531887b68d005a02e469",
+        "android_client_info": {
+          "package_name": "com.example.circol"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "897926776524-eu85ji930i0l8sj0kqeqpfb96cahvmru.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDqvN0q9WkHb4BXPi2FaOa4SplxlWfQxY4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "897926776524-eu85ji930i0l8sj0kqeqpfb96cahvmru.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
