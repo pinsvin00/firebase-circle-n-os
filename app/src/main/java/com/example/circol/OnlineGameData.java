@@ -1,7 +1,6 @@
 package com.example.circol;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 
 class Move implements Serializable {
     public Mark mark;
@@ -28,8 +27,23 @@ class Move implements Serializable {
     public Move() { }
 }
 
+enum PlayerState {
+    LEFT,
+    REVENGE,
+    PLAY,
+}
+
 class OnlineGameData implements Serializable {
     public String uid;
     public Long milis = System.currentTimeMillis();
+    public PlayerState circleState = PlayerState.PLAY;
+    public PlayerState crossState =  PlayerState.PLAY;
+
+    //revenge related
+    public String revengeLobbyUUID = "";
+
+
+
+
     public Mark move;
 }

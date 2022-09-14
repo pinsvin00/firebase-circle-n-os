@@ -25,23 +25,30 @@ public class OnlineGameHandler extends GameHandler {
     DatabaseReference movesReference;
 
 
-    boolean wantToRevenge = false;
-
 
     public void handleWin(Mark mark) {
 
         String markStr = markToStr(mark);
-        activity.createMessageBox(markStr + "had won",
+        activity.createMessageBox(markStr + " had won!",
                 new EndGameInterface() {
                     @Override
                     public String message() {
                         return "Rewanż?";
                     }
 
+
                     @Override
                     public void handler(AppCompatActivity activity) {
-                        Intent intent = new Intent(activity, ConnectionScreen.class);
-                        activity.startActivity(intent);
+                        if(clientData.mark == Mark.CIRCLE) {
+                            gameData.circleState = PlayerState.REVENGE;
+                        }
+                        else {
+                            gameData.crossState = PlayerState.REVENGE;
+                        }
+
+                        gameData.revengeLobbyUUID = UUID.randomUUID().toString();
+
+
                     }
                 },
 
@@ -58,9 +65,13 @@ public class OnlineGameHandler extends GameHandler {
                     }
                 }
         );
-
-
     }
+
+    public void redirectToMainMenu() {
+        Intent intent = new Intent(activity, ConnectionScreen.class);
+        activity.startActivity(intent);
+    }
+
 
 
     public void updateGameData() {
@@ -96,6 +107,27 @@ public class OnlineGameHandler extends GameHandler {
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 //Update the game data stored in app
                 OnlineGameHandler.this.gameData = dataSnapshot.getValue(OnlineGameData.class);
+
+                if(gameData.crossState == PlayerState.LEFT || gameData.circleState == PlayerState.LEFT) {
+                    redirectToMainMenu();
+                }
+
+                if(!gameData.revengeLobbyUUID.equals("")) {
+                    Intent intent = new Intent(activity, MainActivity.class);
+
+                    OnlineGameData onlineGameData = new OnlineGameData();
+                    onlineGameData.uid = gameData.revengeLobbyUUID;
+
+                    ClientConnectionData clientData = new ClientConnectionData();
+                    clientData.mark = Mark.CIRCLE;
+
+                    intent.putExtra("client-data", clientData);
+                    intent.putExtra("conn-data", onlineGameData);
+                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+
+                    activity.startActivity(intent);
+                }
+
             }
 
             @Override
