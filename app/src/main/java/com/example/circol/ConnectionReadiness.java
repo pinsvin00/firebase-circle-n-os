@@ -3,7 +3,7 @@ package com.example.circol;
 import java.sql.Timestamp;
 import java.util.UUID;
 
-class ConnectionReadiness {
+class   ConnectionReadiness {
     public String uuid;
     public Long milis;
 

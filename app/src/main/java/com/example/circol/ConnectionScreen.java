@@ -44,6 +44,8 @@ public class ConnectionScreen extends AppCompatActivity {
                 Intent intent = new Intent(ConnectionScreen.this, MainActivity.class);
                 intent.putExtra("conn-data", onlineGameData);
                 intent.putExtra("client-data", clientData);
+                intent.putExtra("isOnline", true);
+
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
 
                 connections.child(partnerReadiness.uuid).removeValue();
@@ -73,6 +75,7 @@ public class ConnectionScreen extends AppCompatActivity {
 
                 intent.putExtra("client-data", clientData);
                 intent.putExtra("conn-data", data);
+                intent.putExtra("isOnline", true);
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
 
                 startActivity(intent);

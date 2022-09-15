@@ -47,7 +47,7 @@ public class OnlineGameHandler extends GameHandler {
                         }
 
                         gameData.revengeLobbyUUID = UUID.randomUUID().toString();
-
+                        updateGameData();
 
                     }
                 },
@@ -60,6 +60,15 @@ public class OnlineGameHandler extends GameHandler {
 
                     @Override
                     public void handler(AppCompatActivity activity) {
+                        if(clientData.mark == Mark.CIRCLE) {
+                            gameData.circleState = PlayerState.LEFT;
+                        }
+                        else {
+                            gameData.crossState = PlayerState.LEFT;
+                        }
+
+                        updateGameData();
+
                         Intent intent = new Intent(activity, MainMenu.class);
                         activity.startActivity(intent);
                     }
@@ -81,11 +90,7 @@ public class OnlineGameHandler extends GameHandler {
     @Override
     public void handleFieldClick(int x, int y) {
 
-
-        System.out.println(markToStr(clientData.mark));
-
-        if(clientData.mark != this.currentMark) return;
-
+        if(!clientData.mark.equals(gameData.move)) return;
 
         String moveUUID = UUID.randomUUID().toString();
         this.movesReference.child(moveUUID).setValue(new Move(clientData.mark, x, y));
@@ -112,19 +117,24 @@ public class OnlineGameHandler extends GameHandler {
                     redirectToMainMenu();
                 }
 
-                if(!gameData.revengeLobbyUUID.equals("")) {
+                if(gameData.circleState == PlayerState.REVENGE && gameData.crossState == PlayerState.REVENGE) {
                     Intent intent = new Intent(activity, MainActivity.class);
 
                     OnlineGameData onlineGameData = new OnlineGameData();
                     onlineGameData.uid = gameData.revengeLobbyUUID;
 
-                    ClientConnectionData clientData = new ClientConnectionData();
-                    clientData.mark = Mark.CIRCLE;
-
                     intent.putExtra("client-data", clientData);
                     intent.putExtra("conn-data", onlineGameData);
+                    intent.putExtra("isOnline", true);
                     intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
 
+                    OnlineGameData newData = new OnlineGameData();
+                    newData.uid = gameData.revengeLobbyUUID;
+                    newData.move = Mark.CIRCLE;
+                    DatabaseReference gameRef =  FirebaseProvider.get().getReference("tictactoe").child("games").child(newData.uid);
+                    gameRef.setValue(newData);
+
+                    gameReference.removeEventListener(this);
                     activity.startActivity(intent);
                 }
 
@@ -142,10 +152,14 @@ public class OnlineGameHandler extends GameHandler {
             public void onChildAdded(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
                 Move lastMove =  dataSnapshot.getValue(Move.class);
 
+
                 OnlineGameHandler.this.markMove(lastMove.x, lastMove.y, lastMove.mark);
 
                 gameData.move = Mark.CIRCLE == lastMove.mark ? Mark.CROSS : Mark.CIRCLE;
+
                 OnlineGameHandler.this.currentMark = gameData.move;
+
+                updateGameData();
 
             }
 

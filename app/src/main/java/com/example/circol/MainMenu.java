@@ -24,5 +24,14 @@ public class MainMenu extends AppCompatActivity {
                 startActivity(new Intent(MainMenu.this, ConnectionScreen.class));
             }
         });
+
+        findViewById(R.id.gamingSolo).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(MainMenu.this, MainActivity.class);
+                intent.putExtra("isOnline", false);
+                startActivity(intent);
+            }
+        });
     }
 }

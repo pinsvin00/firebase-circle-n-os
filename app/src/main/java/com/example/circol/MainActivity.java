@@ -65,15 +65,24 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
 
-        boolean isOnlineGame = true ; //this.getIntent()
+        boolean isOnlineGame = (boolean) this.getIntent().getSerializableExtra("isOnline");
+
+        GameHandler handler;
+
+        if(isOnlineGame) {
+            ClientConnectionData clientConnectionData = (ClientConnectionData) this.getIntent().getSerializableExtra("client-data");
+            OnlineGameData connectionData = (OnlineGameData) this.getIntent().getSerializableExtra("conn-data");
+
+            handler = new OnlineGameHandler(clientConnectionData, connectionData);
+            handler.activity = this;
+        }
+        else {
+            handler = new OfflineGameHandler();
+            handler.activity = this;
+        }
 
         this.notifier = findViewById(R.id.move_notify_text);
 
-        ClientConnectionData clientConnectionData = (ClientConnectionData) this.getIntent().getSerializableExtra("client-data");
-        OnlineGameData connectionData = (OnlineGameData) this.getIntent().getSerializableExtra("conn-data");
-
-        OnlineGameHandler handler = new OnlineGameHandler(clientConnectionData, connectionData);
-        handler.activity = this;
 
         BoardAPI boardAPI = new BoardAPI();
 
