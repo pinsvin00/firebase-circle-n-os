@@ -86,10 +86,12 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-        if(!config.isOnline && config.playerMark == Mark.CROSS) {
+        if(!config.isOnline) {
             OfflineGameHandler hdlr = (OfflineGameHandler) handler;
             hdlr.botMoveDelay = config.botMoveDelay;
-            hdlr.scheduleBotMove();
+
+            if(config.playerMark == Mark.CROSS)
+                hdlr.scheduleBotMove();
         }
 
 

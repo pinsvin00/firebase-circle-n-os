@@ -42,7 +42,7 @@ public class GameHandler {
         this.boardAPI.markFieldAsMark(i, j , mark);
 
         Mark winner = checkGameStatus();
-        if(winner != null ) {
+        if(winner != null) {
             this.end = true;
             handleWin(this.checkGameStatus());
         }
@@ -78,7 +78,7 @@ public class GameHandler {
             if(val == Mark.EMPTY) continue;
 
             for (int j = 1; j < 3; j++) {
-                if (this.board[j][i] != val || this.board[i][j] == Mark.EMPTY) {
+                if (this.board[j][i] != val || this.board[j][i] == Mark.EMPTY) {
                     rowWin = false;
                     break;
                 }
