@@ -3,14 +3,16 @@ package com.example.circol;
 public class GameHandler {
 
     protected Mark[][] board;
-    protected Mark currentMark;
+    protected Mark currentMark = Mark.CIRCLE;
     protected BoardAPI boardAPI;
+    boolean end = false;
     MainActivity activity;
+    Mark myMark;
 
-    public String markToStr(Mark mark) {
-        if(mark == Mark.CIRCLE) return "Kółko";
-        if(mark == Mark.CROSS) return "Krzyzyk";
-        if(mark == Mark.EMPTY) return "Nikt";
+    public String getWinStr(Mark mark) {
+        if(mark == Mark.CIRCLE) return "Wygrało Kółko!";
+        if(mark == Mark.CROSS) return "Wygrał krzyzyk!";
+        if(mark == Mark.EMPTY) return "Remis!";
 
         return "";
     }
@@ -25,26 +27,27 @@ public class GameHandler {
         }
     }
 
+    public Mark oppositeMark(Mark mark) {
+        if(mark == Mark.CIRCLE) return Mark.CROSS;
+        else return Mark.CIRCLE;
+    }
+
 
     public void handleWin(Mark winningMark) {}
 
     protected void markMove(int i, int j, Mark mark) {
 
-        if(this.board[i][j] != Mark.EMPTY) return;
-        this.board[i][j] = this.currentMark;
-
-        boolean draw = this.checkDraw();
-        Mark winner = this.checkWin();
-
-
-        if (winner != Mark.EMPTY || draw) {
-            this.handleWin(this.currentMark);
-        }
-
-        //mark field on board with proper mark
+        if(this.board[i][j] != Mark.EMPTY || this.end) return;
+        this.board[i][j] = mark;
         this.boardAPI.markFieldAsMark(i, j , mark);
 
-        currentMark = Mark.CIRCLE == currentMark ? Mark.CROSS : Mark.CIRCLE;
+        Mark winner = checkGameStatus();
+        if(winner != null ) {
+            this.end = true;
+            handleWin(this.checkGameStatus());
+        }
+
+
 
     }
 
@@ -52,15 +55,16 @@ public class GameHandler {
         this.markMove(i, j, this.currentMark);
     }
 
-    Mark checkWin() {
-        for (int i = 0; i < 3; i++) {
+    Mark checkGameStatus() {
 
+        for (int i = 0; i < 3; i++) {
             boolean rowWin = true;
             Mark val = this.board[i][0];
 
             for (int j = 1; j < 3; j++) {
-                if (this.board[i][j] != val) {
+                if (this.board[i][j] != val || this.board[i][j] == Mark.EMPTY) {
                     rowWin = false;
+                    break;
                 }
             }
 
@@ -71,27 +75,31 @@ public class GameHandler {
 
             boolean rowWin = true;
             Mark val = this.board[0][i];
+            if(val == Mark.EMPTY) continue;
 
             for (int j = 1; j < 3; j++) {
-                if (this.board[j][i] != val) {
+                if (this.board[j][i] != val || this.board[i][j] == Mark.EMPTY) {
                     rowWin = false;
+                    break;
                 }
             }
 
             if (rowWin) return val;
         }
 
-        if (this.board[0][0] == this.board[1][1] && this.board[1][1] == this.board[2][2]) {
+        if (this.board[0][0] == this.board[1][1] && this.board[1][1] == this.board[2][2] && this.board[0][0] != Mark.EMPTY) {
             return this.board[0][0];
         }
 
-        if (this.board[2][0] == this.board[1][1] && this.board[0][2] == this.board[1][1]) {
+        if (this.board[2][0] == this.board[1][1] && this.board[0][2] == this.board[1][1] && this.board[2][0] != Mark.EMPTY) {
             return this.board[2][0];
         }
 
-        return Mark.EMPTY;
+        if(checkDraw()) {
+            return Mark.EMPTY;
+        }
 
-
+        return null;
     }
 
     boolean checkDraw() {

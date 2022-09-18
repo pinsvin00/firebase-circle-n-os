@@ -1,105 +1,133 @@
 package com.example.circol;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Intent;
 import android.os.Bundle;
 
-import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.UUID;
 
 
 public class ConnectionScreen extends AppCompatActivity {
-    ConnectionReadiness conn;
+    ConnectionReadiness playerData;
+    OnlineGameData gameData;
+
+    boolean foundGameToConnect = false;
+    boolean initialGamesFetch = false;
+    boolean joinedToMyGame = false;
 
     FirebaseDatabase db = FirebaseProvider.get();
     DatabaseReference ticTacToe = db.getReference("tictactoe");
-    DatabaseReference connections = ticTacToe.child("connections");
     DatabaseReference games = ticTacToe.child("games");
 
+    TimerTask playSinglePlayer;
 
-    ChildEventListener connectionListener = new ChildEventListener() {
+    Mark selectedMark;
+
+    ValueEventListener checkForGamesToJoin = new ValueEventListener() {
         @Override
-        public void onChildAdded(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
-            ConnectionReadiness partnerReadiness = dataSnapshot.getValue(ConnectionReadiness.class);
-            if( partnerReadiness.milis.compareTo(conn.milis) > 0 ) {
-                System.out.println(conn + "|" + partnerReadiness);
+        public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+            if(initialGamesFetch) return;
 
-                OnlineGameData onlineGameData = new OnlineGameData();
-                onlineGameData.uid = conn.uuid;
-                onlineGameData.move = Mark.CIRCLE;
+            for (DataSnapshot snap : dataSnapshot.getChildren()) {
+                OnlineGameData data = snap.getValue(OnlineGameData.class);
 
-                games.child(onlineGameData.uid).setValue(onlineGameData);
+                if(data.uid.equals(gameData.uid)) continue;
+                if(data.crossState == PlayerState.LEFT || data.circleState == PlayerState.LEFT) continue;
 
-                ClientConnectionData clientData = new ClientConnectionData();
-                clientData.mark = Mark.CROSS;
 
-                Intent intent = new Intent(ConnectionScreen.this, MainActivity.class);
-                intent.putExtra("conn-data", onlineGameData);
-                intent.putExtra("client-data", clientData);
-                intent.putExtra("isOnline", true);
+                boolean connected = false;
+                if(data.crossState == PlayerState.EMPTY && selectedMark == Mark.CROSS) {
+                    data.crossState = PlayerState.PLAY;
+                    connected = true;
+                }
+                else if(data.circleState == PlayerState.EMPTY && selectedMark == Mark.CIRCLE) {
+                    data.circleState = PlayerState.PLAY;
+                    connected = true;
+                }
 
-                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                if(connected)  {
+                    games.child(data.uid).setValue(data);
 
-                connections.child(partnerReadiness.uuid).removeValue();
-                connections.child(conn.uuid).removeValue();
+                    Intent intent = new Intent(ConnectionScreen.this, MainActivity.class);
 
-                startActivity(intent);
+                    deleteMyGame();
+
+                    GameConfig config = new GameConfig.Builder(true)
+                            .setOnlineGameData(data)
+                            .setPlayerMark(selectedMark).build();
+
+                    intent.putExtra("config", config);
+                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                    startActivity(intent);
+
+                    initialGamesFetch = true;
+
+                    return;
+                }
             }
+
+            initialGamesFetch = true;
         }
-        @Override
-        public void onChildChanged(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {}
-        @Override
-        public void onChildRemoved(@NonNull DataSnapshot dataSnapshot) {}
-        @Override
-        public void onChildMoved(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {}
+
         @Override
         public void onCancelled(@NonNull DatabaseError databaseError) {}
     };
 
-    ChildEventListener joinToGame = new ChildEventListener() {
+    ValueEventListener checkForMyGameJoined = new ValueEventListener() {
         @Override
-        public void onChildAdded(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
+        public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+
+
             OnlineGameData data = dataSnapshot.getValue(OnlineGameData.class);
-            if( data.milis.compareTo(conn.milis) > 0 && !data.uid.equals(conn.uuid) ) {
+
+            if(data == null) return;
+            if(data.circleState == PlayerState.PLAY && data.crossState == PlayerState.PLAY) {
+                foundGameToConnect = true;
                 Intent intent = new Intent(ConnectionScreen.this, MainActivity.class);
-                ClientConnectionData clientData = new ClientConnectionData();
-                clientData.mark = Mark.CIRCLE;
 
-                intent.putExtra("client-data", clientData);
-                intent.putExtra("conn-data", data);
-                intent.putExtra("isOnline", true);
+                joinedToMyGame = true;
+
+                GameConfig config = new GameConfig.Builder(true)
+                                .setOnlineGameData(data)
+                                .setPlayerMark(selectedMark).build();
+
+                intent.putExtra("config", config);
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-
                 startActivity(intent);
 
             }
         }
-
-        @Override
-        public void onChildChanged(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {}
-        @Override
-        public void onChildRemoved(@NonNull DataSnapshot dataSnapshot) {}
-        @Override
-        public void onChildMoved(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {}
         @Override
         public void onCancelled(@NonNull DatabaseError databaseError) {}
     };
 
+    void deleteMyGame() {
+        games.child(gameData.uid).removeValue();
+    }
 
     public void onDestroy() {
-        // Must always call the super method at the end.
         System.out.println("Destroyed :( ");
-        connections.removeEventListener(this.connectionListener);
-        games.removeEventListener(this.joinToGame);
         super.onDestroy();
+
+        playSinglePlayer.cancel();
+
+        if(!joinedToMyGame) {
+            deleteMyGame();
+        }
+
+        games.removeEventListener(checkForGamesToJoin);
+        games.child(gameData.uid).removeEventListener(this.checkForMyGameJoined);
     }
 
     @Override
@@ -108,18 +136,50 @@ public class ConnectionScreen extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_connection_screen);
 
-        conn = new ConnectionReadiness();
-        conn.uuid = UUID.randomUUID().toString();
-        conn.milis = System.currentTimeMillis();
+
+        this.selectedMark = (Mark) this.getIntent().getSerializableExtra("mark");
 
 
-        System.out.println("MY ID IS " + conn.uuid);
+        gameData = new OnlineGameData();
+        gameData.uid = UUID.randomUUID().toString();
+        if(this.selectedMark == Mark.CIRCLE) {
+            gameData.circleState = PlayerState.PLAY;
+        }
+        else {
+            gameData.crossState = PlayerState.PLAY;
+        }
 
-        connections.child(conn.uuid).setValue(conn);
+        gameData.move = Mark.CIRCLE;
+        games.child(gameData.uid).setValue(gameData);
 
-        games.addChildEventListener(this.joinToGame);
-        connections.addChildEventListener(this.connectionListener);
+         playSinglePlayer = new TimerTask() {
+            public void run() {
+                Intent intent = new Intent(ConnectionScreen.this, MainActivity.class);
 
+                GameConfig config = new GameConfig.Builder(false)
+                        .setBotMoveDelay(1000L)
+                        .build();
+
+                intent.putExtra("config", config);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+
+                startActivity(intent);
+            }
+        };
+
+
+        Timer timer = new Timer("Timer");
+        long delay = 10000L;
+        timer.schedule(playSinglePlayer, delay);
+
+
+
+        playerData = new ConnectionReadiness();
+        playerData.uuid = UUID.randomUUID().toString();
+        playerData.milis = System.currentTimeMillis();
+
+        games.addValueEventListener(checkForGamesToJoin);
+        games.child(gameData.uid).addValueEventListener(this.checkForMyGameJoined);
 
     }
 }

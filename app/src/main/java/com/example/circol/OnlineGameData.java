@@ -31,19 +31,30 @@ enum PlayerState {
     LEFT,
     REVENGE,
     PLAY,
+    EMPTY,
 }
 
 class OnlineGameData implements Serializable {
     public String uid;
-    public Long milis = System.currentTimeMillis();
-    public PlayerState circleState = PlayerState.PLAY;
-    public PlayerState crossState =  PlayerState.PLAY;
+    public Long millis = System.currentTimeMillis();
+    public PlayerState circleState = PlayerState.EMPTY;
+    public PlayerState crossState =  PlayerState.EMPTY;
 
     //revenge related
     public String revengeLobbyUUID = "";
 
 
-
+    @Override
+    public String toString() {
+        return "OnlineGameData{" +
+                "uid='" + uid + '\'' +
+                ", milis=" + millis +
+                ", circleState=" + circleState +
+                ", crossState=" + crossState +
+                ", revengeLobbyUUID='" + revengeLobbyUUID + '\'' +
+                ", move=" + move +
+                '}';
+    }
 
     public Mark move;
 }

@@ -27,6 +27,7 @@ public class OnlineGameEnd extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 Intent intent = new Intent(OnlineGameEnd.this, MainMenu.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                 startActivity(intent);
             }
         });
@@ -35,6 +36,7 @@ public class OnlineGameEnd extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 Intent intent = new Intent(OnlineGameEnd.this, MainActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                 startActivity(intent);
             }
         });

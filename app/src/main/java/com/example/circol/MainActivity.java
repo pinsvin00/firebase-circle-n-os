@@ -3,18 +3,14 @@ package com.example.circol;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.app.AlertDialog;
-import android.content.Context;
 import android.content.DialogInterface;
-import android.content.Intent;
 import android.os.Bundle;
-import android.view.View;
 import android.widget.Button;
 
 import com.google.android.flexbox.FlexboxLayout;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Function;
 
 
 enum Mark {
@@ -28,12 +24,6 @@ enum Mark {
 public class MainActivity extends AppCompatActivity {
 
     Button notifier;
-
-    public void goToEndScreen(String Message) {
-        Intent intent =  new Intent(this, EndScreen.class);
-        intent.putExtra("message", Message);
-        startActivity(intent);
-    }
 
     public void createMessageBox(
             String message,
@@ -63,34 +53,24 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-
-        boolean isOnlineGame = (boolean) this.getIntent().getSerializableExtra("isOnline");
-
-        GameHandler handler;
-
-        if(isOnlineGame) {
-            ClientConnectionData clientConnectionData = (ClientConnectionData) this.getIntent().getSerializableExtra("client-data");
-            OnlineGameData connectionData = (OnlineGameData) this.getIntent().getSerializableExtra("conn-data");
-
-            handler = new OnlineGameHandler(clientConnectionData, connectionData);
-            handler.activity = this;
-        }
-        else {
-            handler = new OfflineGameHandler();
-            handler.activity = this;
-        }
-
         this.notifier = findViewById(R.id.move_notify_text);
 
+        GameConfig config = (GameConfig) this.getIntent().getSerializableExtra("config");
+        GameHandler handler;
+
+        if(config.isOnline) {
+            handler = new OnlineGameHandler(config.playerMark, config.onlineGameData);
+        }
+        else {
+            handler = new OfflineGameHandler(config.playerMark);
+        }
 
         BoardAPI boardAPI = new BoardAPI();
 
-        handler.boardAPI = boardAPI;
         boardAPI.activity = this;
         boardAPI.ctx = getBaseContext();
-        boardAPI.handler = handler;
         boardAPI.notifier = notifier;
+
 
         List<FlexboxLayout> layouts = new ArrayList<>();
         layouts.add( findViewById(R.id.row0) );
@@ -100,11 +80,17 @@ public class MainActivity extends AppCompatActivity {
 
         boardAPI.generate();
 
+        handler.activity = this;
+        handler.boardAPI = boardAPI;
+        boardAPI.handler = handler;
 
 
 
-
-
+        if(!config.isOnline && config.playerMark == Mark.CROSS) {
+            OfflineGameHandler hdlr = (OfflineGameHandler) handler;
+            hdlr.botMoveDelay = config.botMoveDelay;
+            hdlr.scheduleBotMove();
+        }
 
 
     }

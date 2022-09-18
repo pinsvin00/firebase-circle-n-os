@@ -5,37 +5,41 @@ import android.content.Intent;
 import androidx.appcompat.app.AppCompatActivity;
 
 import java.util.Random;
-import java.util.UUID;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class OfflineGameHandler extends GameHandler {
-
-    public boolean end = false;
-    public OfflineGameHandler() {
+    public long botMoveDelay;
+    public OfflineGameHandler(Mark myMark) {
         super();
-        this.getRandomMark();
+        this.myMark = myMark;
+
     }
 
-    public Mark playerMark;
+    private class BotMoveTask extends TimerTask{
 
-    public void getRandomMark() {
-        Random random =new Random();
-        if( random.nextInt(10) % 2 == 0) {
-            this.playerMark = Mark.CIRCLE;
+        @Override
+        public void run() {
+            activity.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    makeBotMove();
+                    currentMark = myMark;
+                }
+            });
         }
-        else {
-            this.playerMark = Mark.CROSS;
-        }
     }
 
-    private Mark oppositeMark(Mark mark) {
-        if(mark == Mark.CIRCLE) return Mark.CROSS;
-        else return Mark.CROSS;
+
+    public void scheduleBotMove() {
+        Timer timer = new Timer();
+        timer.schedule(new BotMoveTask(), this.botMoveDelay);
     }
+
 
     public void handleWin(Mark mark) {
-        System.out.println("epickie wygranko");
-        String markStr = markToStr(mark);
-        activity.createMessageBox(markStr + " had won!",
+        String winStr = getWinStr(mark);
+        activity.createMessageBox(winStr,
                 new EndGameInterface() {
                     @Override
                     public String message() {
@@ -46,6 +50,10 @@ public class OfflineGameHandler extends GameHandler {
                     @Override
                     public void handler(AppCompatActivity activity) {
                         Intent intent = new Intent(activity, MainActivity.class);
+                        intent.putExtra("config", new GameConfig.Builder(false).
+                                setBotMoveDelay(1000L).setPlayerMark(oppositeMark(myMark)).build()
+                        );
+
                         activity.startActivity(intent);
                     }
                 },
@@ -58,8 +66,7 @@ public class OfflineGameHandler extends GameHandler {
 
                     @Override
                     public void handler(AppCompatActivity activity) {
-                        Intent intent = new Intent(activity, MainMenu.class);
-                        activity.startActivity(intent);
+                        redirectToMainMenu();
                     }
                 }
         );
@@ -67,6 +74,7 @@ public class OfflineGameHandler extends GameHandler {
 
     public void redirectToMainMenu() {
         Intent intent = new Intent(activity, MainMenu.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         activity.startActivity(intent);
     }
 
@@ -81,24 +89,21 @@ public class OfflineGameHandler extends GameHandler {
              y = rand.nextInt(3);
         }
 
-        markMove(x, y, this.oppositeMark(this.playerMark));
+        markMove(x, y, myMark == Mark.CIRCLE ? Mark.CROSS : Mark.CIRCLE);
+        currentMark = myMark;
 
     }
-
 
     @Override
     public void handleFieldClick(int x, int y) {
-
         if(end) return;
-        this.markMove(x, y, Mark.CIRCLE);
-        this.makeBotMove();
+        if(this.currentMark != this.myMark) return;
+        this.currentMark = oppositeMark(this.myMark);
 
-        if(this.checkWin() != Mark.EMPTY) {
-            this.end = true;
-            handleWin(this.checkWin());
-        }
+        this.markMove(x, y, myMark);
+
+        this.scheduleBotMove();
+
     }
-
-
-
 }
+
